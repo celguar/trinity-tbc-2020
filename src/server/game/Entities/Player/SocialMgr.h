@@ -103,8 +103,13 @@ class TC_GAME_API PlayerSocial
         PlayerSocial();
         ~PlayerSocial();
         // adding/removing
+#ifdef VOICECHAT
+        bool AddToSocialList(ObjectGuid::LowType friend_guid, bool ignore, bool mute = false);
+        void RemoveFromSocialList(ObjectGuid::LowType friend_guid, bool ignore, bool mute = false);
+#else
         bool AddToSocialList(ObjectGuid::LowType friend_guid, bool ignore);
         void RemoveFromSocialList(ObjectGuid::LowType friend_guid, bool ignore);
+#endif
         void SetFriendNote(ObjectGuid::LowType friend_guid, std::string note);
         // Packet send's
         void SendSocialList();

@@ -49,12 +49,21 @@ uint32 PlayerSocial::GetNumberOfSocialsWithFlag(SocialFlag flag)
     return counter;
 }
 
+#ifdef VOICECHAT
+bool PlayerSocial::AddToSocialList(ObjectGuid::LowType friend_guid, bool _ignore, bool _mute)
+#else
 bool PlayerSocial::AddToSocialList(ObjectGuid::LowType friend_guid, bool _ignore)
+#endif
 {
     // check client limits
     if(_ignore)
     {
         if(GetNumberOfSocialsWithFlag(SOCIAL_FLAG_IGNORED) >= SOCIALMGR_IGNORE_LIMIT)
+            return false;
+    }
+    else if (_mute)
+    {
+        if (GetNumberOfSocialsWithFlag(SOCIAL_FLAG_MUTED) >= SOCIALMGR_IGNORE_LIMIT)
             return false;
     }
     else
@@ -66,6 +75,8 @@ bool PlayerSocial::AddToSocialList(ObjectGuid::LowType friend_guid, bool _ignore
     uint32 flag = SOCIAL_FLAG_FRIEND;
     if(_ignore)
         flag = SOCIAL_FLAG_IGNORED;
+    if (_mute)
+        flag = SOCIAL_FLAG_MUTED;
 
     auto itr = m_playerSocialMap.find(friend_guid);
     if(itr != m_playerSocialMap.end())
@@ -83,7 +94,11 @@ bool PlayerSocial::AddToSocialList(ObjectGuid::LowType friend_guid, bool _ignore
     return true;
 }
 
+#ifdef VOICECHAT
+void PlayerSocial::RemoveFromSocialList(ObjectGuid::LowType friend_guid, bool _ignore, bool _mute)
+#else
 void PlayerSocial::RemoveFromSocialList(ObjectGuid::LowType friend_guid, bool _ignore)
+#endif
 {
     auto itr = m_playerSocialMap.find(friend_guid);
     if(itr == m_playerSocialMap.end())                      // not exist
@@ -92,6 +107,8 @@ void PlayerSocial::RemoveFromSocialList(ObjectGuid::LowType friend_guid, bool _i
     uint32 flag = SOCIAL_FLAG_FRIEND;
     if(_ignore)
         flag = SOCIAL_FLAG_IGNORED;
+    if (_mute)
+        flag = SOCIAL_FLAG_MUTED;
 
     itr->second.Flags &= ~flag;
     if(itr->second.Flags == 0)

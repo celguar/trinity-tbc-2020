@@ -26,3 +26,33 @@ if(TOOLS)
   add_subdirectory(tools)
 endif(TOOLS)
 
+# Voice Chat server and handlers
+if(VOICECHAT)
+  include(FetchContent)
+
+  FetchContent_Declare(
+    voicechat-server
+    GIT_REPOSITORY "https://github.com/celguar/voicechat-server.git"
+  GIT_TAG "main"
+  )
+
+  if(NOT voicechat-server_POPULATED)
+  message(STATUS "Fetching VoiceChat Server...")
+
+    FetchContent_Populate(voicechat-server)
+
+  if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/voicechat-server)
+      file(REMOVE_RECURSE ${CMAKE_CURRENT_SOURCE_DIR}/voicechat-server)
+  endif()
+
+  file(COPY ${voicechat-server_SOURCE_DIR}/. DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/voicechat-server)
+    message(STATUS "VoiceChat Server fetched and populated in ${CMAKE_CURRENT_SOURCE_DIR}/voicechat-server")
+  endif()
+
+  add_subdirectory(voicechat-server)
+else()
+  if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/voicechat-server)
+    file(REMOVE_RECURSE ${CMAKE_CURRENT_SOURCE_DIR}/voicechat-server)
+  endif()
+endif()
+

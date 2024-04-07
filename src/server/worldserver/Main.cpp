@@ -46,6 +46,10 @@
 #include <execinfo.h>
 #endif
 
+#ifdef VOICECHAT
+#include "VoiceChat/VoiceChatMgr.h"
+#endif
+
 using namespace boost::program_options;
 namespace fs = boost::filesystem;
 
@@ -326,6 +330,13 @@ extern int main(int argc, char **argv)
             ClearOnlineAccounts();
             StopDB();
         });
+
+#ifdef VOICECHAT
+        std::shared_ptr<void> sVoiceSocketMgrHandle(nullptr, [](void*)
+        {
+            sVoiceChatMgr->SocketDisconnected();
+        });
+#endif
 
         // Launch CliRunnable thread
         std::shared_ptr<std::thread> cliThread;

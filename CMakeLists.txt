@@ -66,6 +66,10 @@ if(TESTS)
     add_definitions(-DTESTS)
 endif()
 
+if(VOICECHAT)
+    add_definitions(-DVOICECHAT)
+endif()
+
 # Find revision ID and hash of the sourcetree
 include(cmake/genrev.cmake)
 

@@ -44,6 +44,10 @@
 #include "playerbot.h"
 #endif
 
+#ifdef VOICECHAT
+#include "VoiceChat/VoiceChatMgr.h"
+#endif
+
 namespace {
 
 std::string const DefaultPlayerName = "<none>";
@@ -127,6 +131,9 @@ m_timeSyncCounter(0),
 m_timeSyncTimer(0),
 m_timeSyncServer(0),
 _clientControl(this)
+#ifdef VOICECHAT
+, m_voiceEnabled(false), m_micEnabled(false), m_currentVoiceChannel(0)
+#endif
 {
     memset(m_Tutorials, 0, sizeof(m_Tutorials));
 
@@ -706,6 +713,12 @@ void WorldSession::LogoutPlayer(bool Save)
         _player->CleanupsBeforeDelete();                    // do some cleanup before deleting to prevent crash at crossreferences to already deleted data
 
         sSocialMgr->RemovePlayerSocial(_player->GetGUID().GetCounter());
+
+#ifdef VOICECHAT
+        // Leave voice chat if player disconnects
+        sVoiceChatMgr->RemoveFromVoiceChatChannels(_player->GetGUID());
+#endif
+
         delete _player;
         _player = nullptr;
 

@@ -46,6 +46,8 @@ namespace Trinity
 
             std::size_t run() { return _impl.run(); }
             void stop() { _impl.stop(); }
+            bool stopped() { return _impl.stopped(); }
+            void restart() { _impl.restart(); }
 
 #if BOOST_VERSION >= 106600
             boost::asio::io_context::executor_type get_executor() noexcept { return _impl.get_executor(); }

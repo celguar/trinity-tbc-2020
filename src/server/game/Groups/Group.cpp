@@ -20,6 +20,10 @@
 #include "GroupMgr.h"
 #include "GameTime.h"
 
+#ifdef VOICECHAT
+#include "VoiceChat/VoiceChatMgr.h"
+#endif
+
 Group::Group() :
     m_masterLooterGuid(ObjectGuid::Empty),
     m_looterGuid(ObjectGuid::Empty),
@@ -228,6 +232,13 @@ void Group::ConvertToRaid()
     for (member_citerator citr = m_memberSlots.begin(); citr != m_memberSlots.end(); ++citr)
         if (Player* player = ObjectAccessor::FindPlayer(citr->guid))
             player->UpdateForQuestWorldObjects();
+
+#ifdef VOICECHAT
+    if (!isBGGroup())
+    {
+        sVoiceChatMgr->ConvertToRaidChannel(GetLowGUID());
+    }
+#endif
 }
 
 bool Group::AddInvite(Player *player)
@@ -449,6 +460,23 @@ bool Group::AddMember(Player* player, SQLTransaction trans)
         m_maxEnchantingLevel = player->GetSkillValue(SKILL_ENCHANTING);
 #endif
 
+#ifdef VOICECHAT
+    if (player->GetSession()->IsVoiceChatEnabled())
+    {
+        if (!isBGGroup())
+        {
+            if (isRaidGroup())
+                sVoiceChatMgr->AddToRaidVoiceChatChannel(player->GetGUID(), GetLowGUID());
+            else
+                sVoiceChatMgr->AddToGroupVoiceChatChannel(player->GetGUID(), GetLowGUID());
+        }
+        else
+        {
+            sVoiceChatMgr->AddToBattlegroundVoiceChatChannel(player->GetGUID());
+        }
+    }
+#endif
+
     return true;
 }
 
@@ -602,6 +630,18 @@ bool Group::RemoveMember(ObjectGuid guid, RemoveMethod const& method /*= GROUP_R
 
         if (m_memberMgr.getSize() < ((isLFGGroup() || isBGGroup()) ? 1u : 2u))
             Disband();
+
+#ifdef VOICECHAT
+        if (!isBGGroup())
+        {
+            sVoiceChatMgr->RemoveFromGroupVoiceChatChannel(guid, GetLowGUID());
+            sVoiceChatMgr->RemoveFromRaidVoiceChatChannel(guid, GetLowGUID());
+        }
+        else
+        {
+            sVoiceChatMgr->RemoveFromBattlegroundVoiceChatChannel(guid);
+        }
+#endif
 
         return true;
     }
@@ -868,6 +908,21 @@ void Group::Disband(bool hideDestroy)
 
         sGroupMgr->FreeGroupDbStoreId(this);
     }
+
+#ifdef VOICECHAT
+    if (!isBGGroup())
+    {
+        sVoiceChatMgr->DeleteGroupVoiceChatChannel(GetLowGUID());
+        sVoiceChatMgr->DeleteRaidVoiceChatChannel(GetLowGUID());
+    }
+    else
+    {
+        if (m_bgGroup->GetBgRaid(ALLIANCE) == this)
+            sVoiceChatMgr->DeleteBattlegroundVoiceChatChannel(m_bgGroup->GetInstanceID(), ALLIANCE);
+        else if (m_bgGroup->GetBgRaid(HORDE) == this)
+            sVoiceChatMgr->DeleteBattlegroundVoiceChatChannel(m_bgGroup->GetInstanceID(), HORDE);
+    }
+#endif
 
     sGroupMgr->RemoveGroup(this);
     delete this;

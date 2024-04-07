@@ -5,6 +5,10 @@ ENDIF(NOT PLAYERBOT)
 IF(NOT TESTS)
 	SET(EXCLUDE_TESTS ${CMAKE_CURRENT_SOURCE_DIR}/Testing)
 ENDIF(NOT TESTS)
+
+if(NOT VOICECHAT)
+  SET(EXCLUDE_VOICECHAT ${CMAKE_CURRENT_SOURCE_DIR}/VoiceChat)
+endif()
  
 CollectSourceFiles(
   ${CMAKE_CURRENT_SOURCE_DIR}
@@ -13,6 +17,7 @@ CollectSourceFiles(
   ${CMAKE_CURRENT_SOURCE_DIR}/PrecompiledHeaders
   ${EXCLUDE_PLAYERBOT}
   ${EXCLUDE_TESTS}
+  ${EXCLUDE_VOICECHAT}
 )
 
 if (USE_COREPCH)
@@ -30,6 +35,7 @@ CollectIncludeDirectories(
   #sunstrider: TC has this but this currently breaks intellisense, which apparently needs to include the folder containing the pch. # ${CMAKE_CURRENT_SOURCE_DIR}/PrecompiledHeaders
   ${EXCLUDE_PLAYERBOT}
   ${EXCLUDE_TESTS}
+  ${EXCLUDE_VOICECHAT}
 )
    
   

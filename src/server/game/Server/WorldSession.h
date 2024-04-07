@@ -449,6 +449,14 @@ class TC_GAME_API WorldSession
         std::shared_ptr<ReplayPlayer> GetReplayPlayer() { return m_replayPlayer; }
         std::shared_ptr<ReplayRecorder> GetReplayRecorder() { return m_replayRecorder; }
 
+#ifdef VOICECHAT
+        // Voice Chat
+        bool IsVoiceChatEnabled() const { return m_voiceEnabled; }
+        bool IsMicEnabled() const { return m_micEnabled; }
+        uint16 GetCurrentVoiceChannelId() const { return m_currentVoiceChannel; }
+        void SetCurrentVoiceChannelId(uint32 id) { m_currentVoiceChannel = id; }
+#endif
+
         std::atomic<time_t> m_timeOutTime;
 
         void ResetTimeOutTime(bool onlyActive);
@@ -877,9 +885,32 @@ class TC_GAME_API WorldSession
 
         void HandleCancelTempEnchantmentOpcode(WorldPacket& recvData);
 
-        void HandleChannelVoiceOnOpcode(WorldPacket & recvData);
-        void HandleVoiceSessionEnableOpcode(WorldPacket& recvData);
-        void HandleSetActiveVoiceChannel(WorldPacket& recvData);
+#ifdef VOICECHAT
+        // Voice Chat
+        void HandleAddVoiceIgnoreOpcode(WorldPacket& recvData);
+        void HandleDelVoiceIgnoreOpcode(WorldPacket& recvData);
+        void HandleSilenceInChannel(WorldPacket& recvData);
+        void HandleUnsilenceInChannel(WorldPacket& recvData);
+        void HandleSilenceInParty(WorldPacket& recvData);
+        void HandleUnsilenceInParty(WorldPacket& recvData);
+        void HandleChannelVoiceOnOpcode(WorldPacket& recv_data);
+        void HandleChannelVoiceOffOpcode(WorldPacket& recv_data);
+        void HandleVoiceSessionEnableOpcode(WorldPacket& recv_data);
+        void HandleSetActiveVoiceChannel(WorldPacket& recv_data);
+#else
+        // Voice Chat placeholder
+        void HandleVoiceIgnorePlayerByName(WorldPacket& recvData) {}
+        void HandleVoiceUnIgnorePlayerByName(WorldPacket& recvData) {}
+        void HandleSilenceInChannel(WorldPacket& recvData) {}
+        void HandleUnsilenceInChannel(WorldPacket& recvData) {}
+        void HandleSilenceInParty(WorldPacket& recvData) {}
+        void HandleUnsilenceInParty(WorldPacket& recvData) {}
+        void HandleChannelVoiceOnOpcode(WorldPacket& recv_data) {}
+        void HandleChannelVoiceOffOpcode(WorldPacket& recv_data) {}
+        void HandleVoiceSessionEnableOpcode(WorldPacket& recv_data) {}
+        void HandleSetActiveVoiceChannel(WorldPacket& recv_data) {}
+#endif
+
         void HandleSetTaxiBenchmarkOpcode(WorldPacket& recvData);
 
         // Guild Bank
@@ -987,6 +1018,13 @@ class TC_GAME_API WorldSession
 
         // Warden
         WardenBase* _warden;
+
+#ifdef VOICECHAT
+        // Voice Chat
+        bool m_micEnabled;
+        bool m_voiceEnabled;
+        uint16 m_currentVoiceChannel;
+#endif
 
         time_t _logoutTime;
         bool m_inQueue;                                     // session wait in auth.queue

@@ -124,6 +124,20 @@ class TC_GAME_API Channel
             if(state) flags |= MEMBER_FLAG_MUTED;
             else flags &= ~MEMBER_FLAG_MUTED;
         }
+#ifdef VOICECHAT
+        bool IsMicMuted() { return flags & MEMBER_FLAG_MIC_MUTED; }
+        void SetMicMuted(bool state)
+        {
+            if (state) flags |= MEMBER_FLAG_MIC_MUTED;
+            else flags &= ~MEMBER_FLAG_MIC_MUTED;
+        }
+        bool IsVoiced() { return flags & MEMBER_FLAG_VOICED; }
+        void SetVoiced(bool state)
+        {
+            if (state) flags |= MEMBER_FLAG_VOICED;
+            else flags &= ~MEMBER_FLAG_VOICED;
+        }
+#endif
     };
 
     typedef     std::map<ObjectGuid, PlayerInfo> PlayerList;
@@ -134,6 +148,9 @@ class TC_GAME_API Channel
     GMBannedList gmbanned;
     bool        m_announce;
     bool        m_moderate;
+#ifdef VOICECHAT
+    bool        m_voice;
+#endif
     std::string m_name;
     std::string m_password;
     uint8       m_flags;
@@ -183,10 +200,6 @@ class TC_GAME_API Channel
 
         void SendToAllButOne(WorldPacket *data, ObjectGuid who);
         void SendToOne(WorldPacket *data, ObjectGuid who);
-
-        bool IsOn(ObjectGuid who) const { return players.find(who) != players.end(); }
-
-        bool IsBanned(const ObjectGuid guid) const { return banned.find(guid) != banned.end(); }
         
         bool IsBannedByGM(const ObjectGuid guid);
         void InsertInGMBannedList(ObjectGuid guid, uint64 expire) { gmbanned[guid] = expire; }
@@ -246,6 +259,10 @@ class TC_GAME_API Channel
         uint8 GetFlags() const { return m_flags; }
         bool HasFlag(uint8 flag) { return m_flags & flag; }
 
+        bool IsOn(ObjectGuid who) const { return players.find(who) != players.end(); }
+
+        bool IsBanned(const ObjectGuid guid) const { return banned.find(guid) != banned.end(); }
+
         void Join(ObjectGuid p, const char *pass);
         void Leave(ObjectGuid p, bool send = true);
         void KickOrBan(ObjectGuid good, std::string const& badname, bool ban);
@@ -273,6 +290,44 @@ class TC_GAME_API Channel
         void AddNewGMBan(uint64 accountid, time_t expire) { gmbanned[accountid] = expire; }
         void RemoveGMBan(uint64 accountid);
         void SendToAll(WorldPacket *data, ObjectGuid p = ObjectGuid::Empty);
+
+#ifdef VOICECHAT
+        void AddVoiceChatMembersAfterCreate();
+        void ToggleVoice(ObjectGuid p);
+        bool IsVoiceEnabled() { return HasFlag(CHANNEL_FLAG_VOICE); }
+
+        void SetMicMute(ObjectGuid p, bool set)
+        {
+            if (m_name == "world")
+                return;
+
+            if (players[p].IsMicMuted() != set)
+            {
+                uint8 oldFlag = GetPlayerFlags(p);
+                players[p].SetMicMuted(set);
+
+                WorldPacket data;
+                MakeModeChange(&data, p, oldFlag);
+                SendToAll(&data);
+            }
+        }
+
+        void SetVoice(ObjectGuid p, bool set)
+        {
+            if (m_name == "world")
+                return;
+
+            if (players[p].IsVoiced() != set)
+            {
+                uint8 oldFlag = GetPlayerFlags(p);
+                players[p].SetVoiced(set);
+
+                WorldPacket data;
+                MakeModeChange(&data, p, oldFlag);
+                SendToAll(&data);
+            }
+        }
+#endif
 };
 #endif
 

@@ -9,8 +9,15 @@
 #include "CharacterCache.h"
 #include "GameTime.h"
 
+#ifdef VOICECHAT
+#include "VoiceChat/VoiceChatMgr.h"
+#endif
+
 Channel::Channel(const std::string& name, uint32 channel_id)
 : m_name(name), m_announce(true), m_moderate(false), m_channelId(channel_id), m_password(""), m_flags(0)
+#ifdef VOICECHAT
+, m_voice(false)
+#endif
 {
     // set special flags if built-in channel
     ChatChannelsEntry const* ch = GetChannelEntryFor(channel_id);
@@ -141,6 +148,27 @@ void Channel::Join(ObjectGuid p, const char *pass)
     pinfo.invisible = (plr ? plr->GetSession()->GetSecurity() > SEC_PLAYER : false) && sWorld->getConfig(CONFIG_SILENTLY_GM_JOIN_TO_CHANNEL);
     players[p] = pinfo;
 
+#ifdef VOICECHAT
+    // join voice chat
+    if (!IsConstant() && HasFlag(CHANNEL_FLAG_CUSTOM) && sVoiceChatMgr->CanUseVoiceChat())
+    {
+        // first voice chat enabled member turns it on
+        // only proof is https://www.youtube.com/watch?v=h5oH4ER2cJ0 where voice chat is auto enabled on new channel
+        if (!IsVoiceEnabled())
+        {
+            if (plr && plr->GetSession()->IsVoiceChatEnabled())
+            {
+                // toggle voice and update player flags
+                ToggleVoice(p);
+            }
+        }
+        if (IsVoiceEnabled())
+        {
+            sVoiceChatMgr->AddToCustomVoiceChatChannel(p, this->GetName(), (Team)plr->GetTeam());
+        }
+    }
+#endif
+
     MakeYouJoined(&data);
     SendToOne(&data, p);
 
@@ -195,6 +223,14 @@ void Channel::Leave(ObjectGuid p, bool send)
             ObjectGuid newowner = !players.empty() ? players.begin()->second.player : ObjectGuid::Empty;
             SetOwner(newowner);
         }
+
+#ifdef VOICECHAT
+        // leave voice chat
+        if (plr && IsVoiceEnabled())
+        {
+            sVoiceChatMgr->RemoveFromCustomVoiceChatChannel(p, this->GetName(), (Team)plr->GetTeam());
+        }
+#endif
     }
 }
 
@@ -1056,3 +1092,95 @@ uint32 Channel::GetNumPlayers()
     return falseCount;
 
 }
+
+#ifdef VOICECHAT
+void Channel::AddVoiceChatMembersAfterCreate()
+{
+    // add voice enabled players to channel after it's created on voice server
+    for (auto& player : players)
+    {
+        Player* plr = ObjectAccessor::FindConnectedPlayer(player.first);
+        if (plr)
+        {
+            if (plr->GetSession()->IsVoiceChatEnabled())
+            {
+                sVoiceChatMgr->AddToCustomVoiceChatChannel(player.first, this->GetName(), (Team)plr->GetTeam());
+            }
+        }
+    }
+}
+
+void Channel::ToggleVoice(ObjectGuid p)
+{
+    // silently disable if voice server disconnected
+    if (!p)
+    {
+        m_voice = !m_voice;
+        if (m_voice)
+            m_flags |= CHANNEL_FLAG_VOICE;
+        else
+            m_flags &= ~CHANNEL_FLAG_VOICE;
+
+        return;
+    }
+
+    uint32 sec = 0;
+    Player* plr = ObjectAccessor::FindConnectedPlayer(p);
+    if (plr)
+        sec = plr->GetSession()->GetSecurity();
+
+    if (!IsOn(p))
+    {
+        WorldPacket data;
+        MakeNotMember(&data);
+        SendToOne(&data, p);
+    }
+    else if (!players[p].IsModerator() && sec < SEC_GAMEMASTER2)
+    {
+        WorldPacket data;
+        MakeNotModerator(&data);
+        SendToOne(&data, p);
+    }
+    else
+    {
+        m_voice = !m_voice;
+
+        if (m_voice)
+            m_flags |= CHANNEL_FLAG_VOICE;
+        else
+            m_flags &= ~CHANNEL_FLAG_VOICE;
+
+        WorldPacket data;
+        if (m_announce)
+            MakeVoiceOn(&data, p);
+        else
+            MakeVoiceOff(&data, p);
+        SendToAll(&data);
+    }
+
+
+    if (m_voice)
+        m_flags |= CHANNEL_FLAG_VOICE;
+    else
+        m_flags &= ~CHANNEL_FLAG_VOICE;
+
+    // update player flags, maybe used in right click menu in chat UI
+    for (auto& player : players)
+    {
+        Player* pl = ObjectAccessor::FindConnectedPlayer(player.first);
+        if (pl)
+        {
+            if (pl->GetSession()->IsVoiceChatEnabled())
+            {
+                player.second.SetVoiced(true);
+            }
+        }
+
+    }
+
+    if (m_voice && plr)
+    {
+        sVoiceChatMgr->AddToCustomVoiceChatChannel(p, this->GetName(), (Team)plr->GetTeam());
+    }
+}
+#endif

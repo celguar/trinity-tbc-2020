@@ -11,3 +11,18 @@ sql/world.sql
 .vscode
 ################################################################################
 syntax: regexp
+
+
+# Top-level generic files
+#
+bin
+build
+tags
+TAGS
+win
+!.gitignore
+!.gitattributes
+!.travis.yml
+
+# voice chat
+src/voicechat-server/

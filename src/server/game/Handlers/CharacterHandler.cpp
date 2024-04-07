@@ -31,6 +31,10 @@
 #include "ReputationMgr.h"
 #include "GameTime.h"
 
+#ifdef VOICECHAT
+#include "VoiceChat/VoiceChatMgr.h"
+#endif
+
 #ifdef PLAYERBOT
 #include "playerbot.h"
 #include "PlayerbotAIConfig.h"
@@ -678,7 +682,11 @@ void WorldSession::_HandlePlayerLogin(Player* pCurrChar, LoginQueryHolder* holde
 
     data.Initialize(SMSG_FEATURE_SYSTEM_STATUS, 2);         // added in 2.2.0
     data << uint8(2);                                       // unknown value
-    data << uint8(0);                                       // enable(1)/disable(0) voice chat interface in client
+#ifdef VOICECHAT
+    data << uint8(sVoiceChatMgr->CanSeeVoiceChat());         // Voice chat is available
+#else
+    data << uint8(0);                                       // Voice chat is disabled
+#endif
     SendPacket(&data);
 
     {
@@ -997,6 +1005,14 @@ void WorldSession::_HandlePlayerLogin(Player* pCurrChar, LoginQueryHolder* holde
     //sun: Avoid bug abuse to enter in heroic instance without needed reputation level
     if (sMapMgr->PlayerCannotEnter(pCurrChar->GetMap()->GetId(), pCurrChar))
         pCurrChar->RepopAtGraveyard();
+
+#ifdef VOICECHAT
+    // join available voice channels
+    if (IsVoiceChatEnabled())
+    {
+        sVoiceChatMgr->JoinAvailableVoiceChatChannels(this);
+    }
+#endif
 
     m_playerLoading = false;
 }

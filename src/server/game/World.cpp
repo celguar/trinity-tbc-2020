@@ -76,6 +76,10 @@
 #include "RandomPlayerbotMgr.h"
 #endif
 
+#ifdef VOICECHAT
+#include "VoiceChat/VoiceChatMgr.h"
+#endif
+
 TC_GAME_API std::atomic<bool> World::m_stopEvent(false);
 uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
 TC_GAME_API std::atomic<uint32> World::m_worldLoopCounter(0);
@@ -1982,6 +1986,10 @@ void World::SetInitialWorldSettings()
     sPlayerbotAIConfig.Initialize();
     #endif
 
+#ifdef VOICECHAT
+    sVoiceChatMgr->Init();
+#endif
+
     if (sWorld->getBoolConfig(CONFIG_RESTORE_DELETED_ITEMS))
     {
         TC_LOG_INFO("server.loading", "Restoring deleted items to players ...");
@@ -2237,6 +2245,10 @@ void World::Update(time_t diff)
 
     // update the instance reset times
     sInstanceSaveMgr->Update();
+
+#ifdef VOICECHAT
+    sVoiceChatMgr->Update();
+#endif
 
     // Check for shutdown warning
     if (_guidWarn && !_guidAlert)

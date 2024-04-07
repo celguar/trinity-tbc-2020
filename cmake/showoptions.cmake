@@ -105,6 +105,12 @@ if( WITH_STRICT_DATABASE_TYPE_CHECKS )
   add_definitions(-DTRINITY_STRICT_DATABASE_TYPE_CHECKS)
 endif()
 
+if(VOICECHAT)
+    message("* VoiceChat:                    Yes")
+else()
+    message("* VoiceChat:                    No ")
+endif()
+
 if(PLAYERBOT)
     message("* Playerbot:                    Yes")
 else()
