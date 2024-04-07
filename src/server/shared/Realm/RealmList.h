@@ -39,6 +39,7 @@ namespace Trinity
     {
         class IoContext;
         class DeadlineTimer;
+        class Resolver;
     }
 }
 
@@ -69,7 +70,7 @@ private:
     RealmMap _realms;
     uint32 _updateInterval;
     std::unique_ptr<Trinity::Asio::DeadlineTimer> _updateTimer;
-    std::unique_ptr<boost::asio::ip::tcp_resolver> _resolver;
+    std::unique_ptr<Trinity::Asio::Resolver> _resolver;
 };
 
 #define sRealmList RealmList::Instance()
